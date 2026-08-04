@@ -109,21 +109,27 @@ function renderSidebar() {
   const byFolder = {}; const uncat = [];
   for (const s of state.sources) { if (s.folderId == null) uncat.push(s); else (byFolder[s.folderId] ||= []).push(s); }
 
-  let h = `<div class="section">
-    <div class="item${act(v.type==='all')}" data-view="all">📰 Todos</div>
-    <div class="item${act(v.type==='unread')}" data-view="unread">🔵 No leídos</div>
-    <div class="item${act(v.type==='starred')}" data-view="starred">⭐ Favoritos</div>
-  </div>
-  <div class="section-title">Categorías <button data-action="add-folder" title="Nueva categoría">+</button></div>`;
+  let h = `
+    <div class="sb-item${act(v.type==='all')}" data-view="all">
+      <span class="sb-icon">📰</span><span class="sb-name">Todos</span>
+    </div>
+    <div class="sb-item${act(v.type==='unread')}" data-view="unread">
+      <span class="sb-icon">🔵</span><span class="sb-name">No leídos</span>
+    </div>
+    <div class="sb-item${act(v.type==='starred')}" data-view="starred">
+      <span class="sb-icon">⭐</span><span class="sb-name">Favoritos</span>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-section-label">Categorías <button data-action="add-folder" title="Nueva categoría">+</button></div>`;
 
   for (const f of state.folders) {
     const open = state.expanded.has(f.id);
     h += `<div class="folder">
-      <div class="item folder-head${act(v.type==='folder'&&v.id==f.id)}">
-        <span class="twisty" data-toggle="${f.id}">${open?'▾':'▸'}</span>
-        <span class="folder-name" data-view="folder" data-id="${f.id}">${esc(f.name)}</span>
-        ${f.unreadCount ? `<span class="badge">${f.unreadCount}</span>` : ''}
-        <span class="folder-actions">
+      <div class="sb-item folder-head${act(v.type==='folder'&&v.id==f.id)}">
+        <span class="sb-twisty" data-toggle="${f.id}">${open?'▾':'▸'}</span>
+        <span class="sb-name" data-view="folder" data-id="${f.id}">${esc(f.name)}</span>
+        ${f.unreadCount ? `<span class="sb-badge">${f.unreadCount > 999 ? '999+' : f.unreadCount}</span>` : ''}
+        <span class="sb-folder-actions">
           <button data-action="rename-folder" data-id="${f.id}" title="Renombrar">✎</button>
           <button data-action="delete-folder" data-id="${f.id}" title="Eliminar">×</button>
         </span>
@@ -131,8 +137,8 @@ function renderSidebar() {
     if (open) {
       const srcs = byFolder[f.id] || [];
       for (const s of srcs)
-        h += `<div class="item source${act(v.type==='source'&&v.id==s.id)}" data-view="source" data-id="${s.id}">${esc(s.name)}${s.lastError?` <span class="err" title="${escAttr(s.lastError)}">!</span>`:''}</div>`;
-      if (!srcs.length) h += `<div class="item empty">sin feeds</div>`;
+        h += `<div class="sb-item source${act(v.type==='source'&&v.id==s.id)}" data-view="source" data-id="${s.id}"><span class="sb-name">${esc(s.name)}</span>${s.lastError?`<span class="err-dot" title="${escAttr(s.lastError)}">!</span>`:''}</div>`;
+      if (!srcs.length) h += `<div class="sb-item empty-src">sin feeds</div>`;
     }
     h += `</div>`;
   }
@@ -140,14 +146,17 @@ function renderSidebar() {
   if (uncat.length) {
     const open = state.expanded.has('unc');
     h += `<div class="folder">
-      <div class="item folder-head"><span class="twisty" data-toggle="unc">${open?'▾':'▸'}</span>
-      <span class="folder-name">Sin categoría</span></div>`;
+      <div class="sb-item folder-head">
+        <span class="sb-twisty" data-toggle="unc">${open?'▾':'▸'}</span>
+        <span class="sb-name">Sin categoría</span>
+      </div>`;
     if (open) for (const s of uncat)
-      h += `<div class="item source${act(v.type==='source'&&v.id==s.id)}" data-view="source" data-id="${s.id}">${esc(s.name)}</div>`;
+      h += `<div class="sb-item source${act(v.type==='source'&&v.id==s.id)}" data-view="source" data-id="${s.id}"><span class="sb-name">${esc(s.name)}</span></div>`;
     h += `</div>`;
   }
 
-  h += `<div class="sidebar-actions">
+  h += `<div class="sb-divider"></div>
+  <div class="sb-actions">
     <button data-action="add-feed">+ Feed</button>
     <button data-action="manage-feeds">Gestionar</button>
     <button data-action="import">Importar</button>
@@ -175,28 +184,27 @@ function renderArticles() {
     return;
   }
 
-  const sevIcon = { critical:'🔴', high:'🟠', medium:'🟡', low:'⚪' };
+  const sevPh = { critical:'🔴', high:'🟠', medium:'🟡', low:'📰' };
 
   grid.innerHTML = state.articles.map(a => {
     const sev = esc(a.severity);
-    const thumb = a.imageUrl
-      ? `<img src="${escAttr(a.imageUrl)}" width="64" height="64" loading="lazy" decoding="async" alt=""
-           style="width:64px;height:64px;object-fit:cover;object-position:center;display:block;border-radius:7px;flex-shrink:0"/>`
-      : `<div class="art-thumb-ph">${sevIcon[a.severity] || '📰'}</div>`;
+
+    // Imagen de portada arriba (como Inoreader), o placeholder con ícono
+    const cover = a.imageUrl
+      ? `<img class="art-cover" src="${escAttr(a.imageUrl)}" loading="lazy" decoding="async" alt="" />`
+      : `<div class="art-cover-ph">${sevPh[a.severity] || '📰'}</div>`;
 
     return `<div class="article ${a.isRead?'read':'unread'}" data-article="${a.id}">
+      ${cover}
       <div class="sev-bar sev-bar-${sev}"></div>
-      <div class="art-card-body">
-        <div class="art-thumb-box">${thumb}</div>
-        <div class="art-text">
-          <div class="art-head">
-            <span class="sev sev-${sev}"></span>
-            <span class="art-title">${esc(a.title)}</span>
-            <span class="star ${a.isStarred?'on':''}" data-star="${a.id}" title="Guardar en favoritos">★</span>
-          </div>
-          ${a.summary ? `<div class="art-preview">${esc(a.summary)}</div>` : ''}
-          <div class="art-meta">${esc(a.sourceName)} · ${relTime(a.publishedAt)}</div>
+      <div class="art-body">
+        <div class="art-head">
+          <span class="sev sev-${sev}"></span>
+          <span class="art-title">${esc(a.title)}</span>
+          <span class="star ${a.isStarred?'on':''}" data-star="${a.id}" title="Guardar en favoritos">★</span>
         </div>
+        ${a.summary ? `<div class="art-preview">${esc(a.summary)}</div>` : ''}
+        <div class="art-meta">${esc(a.sourceName)} · ${relTime(a.publishedAt)}</div>
       </div>
     </div>`;
   }).join('');
