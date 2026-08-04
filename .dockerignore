@@ -1,0 +1,11 @@
+target/
+data/
+*.db
+*.db-wal
+*.db-shm
+.git/
+.env
+frontend/
+k8s/
+seeds-opml/
+*.zip
