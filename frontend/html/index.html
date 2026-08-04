@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Azkintun-RSS</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; height: 100vh; overflow: hidden;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #0a0e14; color: #c9d1d9; font-size: 14px;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  a { color: #58a6ff; }
+
+  /* ── Login ── */
+  #login { height: 100vh; display: grid; place-items: center; }
+  .card { width: min(92vw, 380px); background: #0d1117; border: 1px solid #1f2937; border-radius: 12px; padding: 28px; }
+  .card h1 { margin: 0 0 20px; font-size: 20px; color: #58a6ff; }
+  .card label { display: block; font-size: 12px; margin: 12px 0 6px; color: #8b949e; }
+  .card input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #30363d; background: #010409; color: #c9d1d9; font-size: 14px; }
+  .card input:focus { outline: none; border-color: #58a6ff; }
+  .card button { width: 100%; margin-top: 20px; padding: 11px; border: none; border-radius: 8px; background: #238636; color: #fff; font-size: 14px; font-weight: 600; }
+  .card button:hover { background: #2ea043; }
+  .err { color: #f85149; font-size: 12px; min-height: 16px; margin-top: 10px; }
+
+  /* ── Layout ── */
+  #app { display: none; grid-template-rows: auto 1fr; height: 100vh; }
+  header { display: flex; align-items: center; gap: 14px; padding: 10px 16px; border-bottom: 1px solid #1f2937; background: #0d1117; }
+  header .logo { font-weight: 700; color: #58a6ff; letter-spacing: .5px; }
+  header .search { flex: 1; max-width: 420px; }
+  header .search input { width: 100%; padding: 7px 12px; border-radius: 8px; border: 1px solid #30363d; background: #010409; color: #c9d1d9; }
+  header .spacer { flex: 1; }
+  header .user { color: #8b949e; font-size: 13px; }
+  header button { padding: 7px 12px; border: 1px solid #30363d; border-radius: 8px; background: #161b22; color: #c9d1d9; }
+  header button:hover { border-color: #58a6ff; }
+  #scrape-status { color: #d29922; font-size: 12px; }
+
+  .layout { display: grid; grid-template-columns: 280px 1fr; height: 100%; overflow: hidden; }
+
+  /* ── Sidebar ── */
+  #sidebar { border-right: 1px solid #1f2937; overflow-y: auto; padding: 8px; background: #0b0f16; }
+  #sidebar .section { margin-bottom: 8px; }
+  #sidebar .section-title { display: flex; align-items: center; justify-content: space-between; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: #6e7681; margin: 14px 6px 6px; }
+  #sidebar .section-title button { background: none; border: none; color: #6e7681; font-size: 16px; line-height: 1; padding: 0 4px; }
+  #sidebar .section-title button:hover { color: #58a6ff; }
+  .item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; cursor: pointer; user-select: none; }
+  .item:hover { background: #161b22; }
+  .item.active { background: #1f6feb33; color: #fff; }
+  .item .badge { margin-left: auto; background: #30363d; color: #c9d1d9; border-radius: 10px; padding: 0 7px; font-size: 11px; }
+  .twisty { width: 14px; text-align: center; color: #6e7681; font-size: 10px; }
+  .folder-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .folder-actions { display: none; gap: 2px; }
+  .folder-head:hover .folder-actions { display: flex; }
+  .folder-actions button { background: none; border: none; color: #6e7681; font-size: 12px; padding: 0 3px; }
+  .folder-actions button:hover { color: #58a6ff; }
+  .item.source { padding-left: 28px; font-size: 13px; color: #a5adba; }
+  .item.empty { padding-left: 28px; font-size: 12px; color: #4d5560; font-style: italic; cursor: default; }
+  .item.empty:hover { background: none; }
+  .item .err { color: #f85149; margin-left: 4px; font-weight: 700; }
+  .sidebar-actions { display: flex; gap: 6px; margin: 14px 6px; flex-wrap: wrap; }
+  .sidebar-actions button { flex: 1; min-width: 70px; padding: 7px; border: 1px solid #30363d; border-radius: 6px; background: #161b22; color: #c9d1d9; font-size: 12px; }
+  .sidebar-actions button:hover { border-color: #58a6ff; }
+
+  /* ── Content ── */
+  #content { display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
+  .toolbar { display: flex; align-items: center; gap: 14px; padding: 10px 18px; border-bottom: 1px solid #1f2937; }
+  .toolbar h2 { margin: 0; font-size: 16px; }
+  .toolbar .count { color: #6e7681; font-size: 13px; }
+  .toolbar .spacer { flex: 1; }
+  .toolbar label { font-size: 13px; color: #8b949e; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .toolbar button { padding: 6px 10px; border: 1px solid #30363d; border-radius: 6px; background: #161b22; color: #c9d1d9; font-size: 12px; }
+  .toolbar button:hover { border-color: #58a6ff; }
+  /* ── Articles grid ── */
+  #articles { overflow-y: auto; padding: 14px; }
+  #articles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+  }
+
+  /* Card */
+  .article {
+    background: #0d1117; border: 1px solid #1f2937; border-radius: 10px;
+    overflow: hidden; cursor: pointer; display: flex; flex-direction: column;
+    transition: border-color .12s, box-shadow .12s;
+  }
+  .article:hover { border-color: #30363d; box-shadow: 0 2px 12px rgba(0,0,0,.5); }
+  .article.unread { border-left: 3px solid #1f6feb; }
+  .article.read   { border-left: 3px solid transparent; }
+
+  .sev-bar { height: 3px; flex-shrink: 0; }
+  .sev-bar-critical { background: #f85149; }
+  .sev-bar-high     { background: #db6d28; }
+  .sev-bar-medium   { background: #d29922; }
+  .sev-bar-low      { background: #1f2937; }
+
+  .art-card-body { padding: 10px 12px; flex: 1; display: flex; gap: 10px; align-items: flex-start; }
+  .art-thumb-box { flex-shrink: 0; width: 64px; height: 64px; min-width: 64px;
+    border-radius: 7px; overflow: hidden; background: #161b22; }
+  .art-thumb-box img { width: 64px; height: 64px; object-fit: cover; object-position: center; display: block; }
+  .art-thumb-ph { width: 100%; height: 100%; display: flex; align-items: center;
+    justify-content: center; font-size: 22px; opacity: .25; }
+  .art-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .art-head { display: flex; align-items: flex-start; gap: 6px; }
+  .art-title { flex: 1; font-size: 13px; line-height: 1.4; }
+  .article.unread .art-title { font-weight: 700; color: #e6edf3; }
+  .article.read   .art-title { color: #8b949e; }
+  .star { color: #30363d; font-size: 15px; cursor: pointer; flex-shrink: 0;
+    transition: transform .1s; line-height: 1; margin-top: 1px; }
+  .star.on  { color: #e3b341; }
+  .star:hover { color: #e3b341; transform: scale(1.2); }
+  .sev { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .sev-critical { background: #f85149; }
+  .sev-high     { background: #db6d28; }
+  .sev-medium   { background: #d29922; }
+  .sev-low      { background: #3d444d; }
+  .art-preview { font-size: 11px; color: #6e7681; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .art-meta { font-size: 10px; color: #4d5560; }
+
+  /* ── Article popup (dialog nativo) ── */
+  #art-dialog {
+    border: none; border-radius: 14px; padding: 0;
+    background: #0d1117; color: #c9d1d9;
+    width: min(680px, 94vw); max-height: 85vh;
+    box-shadow: 0 24px 80px rgba(0,0,0,.8);
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  #art-dialog::backdrop { background: rgba(0,0,0,.65); backdrop-filter: blur(2px); }
+  .dlg-img { width: 100%; height: 200px; object-fit: cover; object-position: center;
+    display: block; background: #161b22; flex-shrink: 0; }
+  .dlg-sev-bar { height: 4px; flex-shrink: 0; }
+  .dlg-body { padding: 20px 22px 22px; overflow-y: auto; flex: 1;
+    display: flex; flex-direction: column; gap: 10px; }
+  .dlg-title { font-size: 17px; font-weight: 700; color: #e6edf3; line-height: 1.4; margin: 0; }
+  .dlg-meta  { font-size: 12px; color: #6e7681; }
+  .dlg-summary { font-size: 13px; color: #adbac7; line-height: 1.65; }
+  .dlg-footer { display: flex; align-items: center; gap: 12px;
+    padding-top: 12px; border-top: 1px solid #1f2937; margin-top: auto; }
+  .dlg-footer a { font-size: 13px; }
+  .dlg-star { font-size: 20px; cursor: pointer; color: #30363d; transition: transform .1s; }
+  .dlg-star.on { color: #e3b341; }
+  .dlg-star:hover { color: #e3b341; transform: scale(1.15); }
+  .dlg-close { margin-left: auto; padding: 7px 14px; border: 1px solid #30363d;
+    border-radius: 7px; background: #161b22; color: #c9d1d9; font-size: 13px; cursor: pointer; }
+  .dlg-close:hover { border-color: #58a6ff; }
+
+  .empty-state { text-align: center; color: #4d5560; padding: 60px 20px; grid-column: 1/-1; }
+
+  /* ── Modal ── */
+  .overlay { position: fixed; inset: 0; background: #000a; display: grid; place-items: center; z-index: 100; }
+  .modal { width: min(92vw, 440px); background: #0d1117; border: 1px solid #30363d; border-radius: 12px; padding: 24px; }
+  .modal.wide { width: min(92vw, 640px); }
+  .modal h3 { margin: 0 0 16px; font-size: 17px; }
+  .modal label { display: block; font-size: 12px; margin: 12px 0 6px; color: #8b949e; }
+  .modal input, .modal select { width: 100%; padding: 9px 11px; border-radius: 7px; border: 1px solid #30363d; background: #010409; color: #c9d1d9; font-size: 14px; }
+  .modal .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .modal .actions button { padding: 9px 16px; border: none; border-radius: 7px; background: #238636; color: #fff; font-size: 13px; }
+  .modal .actions button.btn-secondary { background: #21262d; color: #c9d1d9; }
+  .feed-manage { max-height: 55vh; overflow-y: auto; margin-top: 6px; }
+  .feed-row { display: grid; grid-template-columns: 1fr 140px auto auto; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid #161b22; }
+  .feed-row .feed-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .feed-row select { padding: 5px 8px; border-radius: 6px; border: 1px solid #30363d; background: #010409; color: #c9d1d9; }
+  .feed-row .active { font-size: 12px; color: #8b949e; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .feed-row .del { padding: 5px 10px; border: 1px solid #30363d; border-radius: 6px; background: #161b22; color: #f85149; font-size: 12px; }
+  .modal > .btn-secondary { margin-top: 16px; padding: 9px 16px; border: none; border-radius: 7px; background: #21262d; color: #c9d1d9; }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login">
+  <div class="card">
+    <h1>⚡ Azkintun</h1>
+    <label for="u">Usuario</label>
+    <input id="u" autocomplete="username" value="admin" />
+    <label for="p">Contraseña</label>
+    <input id="p" type="password" autocomplete="current-password" />
+    <button id="login-btn">Ingresar</button>
+    <div id="login-err" class="err"></div>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+  <header>
+    <span class="logo">⚡ Azkintun</span>
+    <div class="search"><input id="search" placeholder="Buscar artículos…" /></div>
+    <span id="scrape-status"></span>
+    <span class="spacer"></span>
+    <button id="refresh-btn" title="Actualizar feeds ahora">⟳ Actualizar</button>
+    <span class="user" id="user-label"></span>
+    <button id="pw-btn" title="Cambiar contraseña">🔑</button>
+    <button id="logout-btn">Salir</button>
+  </header>
+  <div class="layout">
+    <aside id="sidebar"></aside>
+    <section id="content">
+      <div class="toolbar">
+        <h2 id="view-title"></h2>
+        <span class="count" id="view-count"></span>
+        <span class="spacer"></span>
+        <label><input type="checkbox" id="unread-toggle" /> Solo no leídos</label>
+        <button id="markall-btn">Marcar todo leído</button>
+      </div>
+      <div id="articles"><div id="articles-grid"></div></div>
+    </section>
+  </div>
+</div>
+
+<!-- ── Article popup ── -->
+<dialog id="art-dialog">
+  <div class="dlg-sev-bar" id="dlg-sev-bar"></div>
+  <img id="dlg-img" class="dlg-img" loading="lazy" decoding="async" alt="" style="display:none"/>
+  <div class="dlg-body">
+    <h2 class="dlg-title" id="dlg-title"></h2>
+    <div class="dlg-meta"  id="dlg-meta"></div>
+    <div class="dlg-summary" id="dlg-summary"></div>
+    <div class="dlg-footer">
+      <span class="dlg-star" id="dlg-star" title="Guardar en favoritos">★</span>
+      <a id="dlg-link" href="#" target="_blank" rel="noopener">Abrir artículo completo ↗</a>
+      <button class="dlg-close" id="dlg-close">Cerrar</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>

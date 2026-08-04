@@ -1,0 +1,91 @@
+# =============================================================================
+# Azkintun-RSS - nginx del contenedor frontend
+#
+# Hace dos cosas:
+#   1. Sirve los archivos estáticos del SPA (con fallback a index.html).
+#   2. Reverse-proxy de /api/ hacia el backend por la red interna.
+#
+# El navegador SOLO habla con nginx (mismo origen) → no hay CORS, y el
+# backend nunca queda expuesto directamente a internet.
+#
+# El destino del backend se parametriza con BACKEND_UPSTREAM (envsubst al
+# arrancar):
+#   - Docker Compose: el service se llama "backend" → default backend:3001
+#   - Kubernetes:     el Service se llama "azkintun-backend" → se pasa
+#                     BACKEND_UPSTREAM=azkintun-backend:3001 por env.
+# =============================================================================
+
+server {
+    listen 80;
+    server_name _;
+
+    # Resolver DNS interno + proxy_pass con variable = resolución PEREZOSA.
+    # Clave para que el pod NO crashee si el backend todavía no levantó:
+    # con un `upstream {}` estático, nginx resuelve el DNS al arrancar y, si
+    # el backend no existe aún, falla y entra en CrashLoopBackOff. Al usar
+    # una variable en proxy_pass, nginx resuelve en cada request (cuando el
+    # backend ya está disponible).
+    #   - En k8s: 10.43.0.10 es el ClusterIP típico de kube-dns/coredns.
+    #   - En Docker Compose: 127.0.0.11 es el resolver embebido de Docker.
+    # Se parametriza con DNS_RESOLVER (default apto para k3s).
+    resolver ${DNS_RESOLVER} valid=10s ipv6=off;
+
+    # ── Tamaño máximo de subida (imports OPML/CSV) ──
+    client_max_body_size 10m;
+
+    # ── Cabeceras de seguridad ──
+    add_header X-Frame-Options            "SAMEORIGIN"                    always;
+    add_header X-Content-Type-Options     "nosniff"                       always;
+    add_header Referrer-Policy            "strict-origin-when-cross-origin" always;
+    add_header X-XSS-Protection           "1; mode=block"                 always;
+    # CSP conservadora. Ajustar cuando el SPA real necesite CDNs/estilos
+    # inline. 'self' cubre el caso mismo-origen (API incluida).
+    add_header Content-Security-Policy    "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'self'" always;
+
+    # ── API → backend ──
+    location /api/ {
+        # $backend en variable (no upstream estático) → resolución perezosa.
+        set                $backend http://${BACKEND_UPSTREAM};
+        proxy_pass         $backend;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
+    }
+
+    # ── SPA estático ──
+    root  /usr/share/nginx/html;
+    index index.html;
+
+    # index.html: nunca cachear. El browser lo pide siempre fresco para
+    # detectar si los assets (app.js, etc.) cambiaron de versión.
+    location = /index.html {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma        "no-cache";
+        expires 0;
+    }
+
+    # JS y CSS propios: caché de 1 hora. Sin hashes en los nombres no
+    # podemos usar "immutable", pero 1h evita re-descargas innecesarias
+    # en la misma sesión. Al hacer docker compose up --build el archivo
+    # cambia y el browser lo pide de nuevo porque index.html no estaba
+    # cacheado.
+    location ~* \.(js|css)$ {
+        expires 1h;
+        add_header Cache-Control "public, max-age=3600";
+    }
+
+    # Imágenes y fuentes estáticas propias: caché largo (7 días).
+    location ~* \.(woff2?|png|jpg|jpeg|gif|svg|ico)$ {
+        expires 7d;
+        add_header Cache-Control "public, max-age=604800, immutable";
+    }
+
+    # Todo lo demás (SPA fallback): sin caché explícito, nginx devuelve
+    # last-modified/etag que el browser puede usar para revalidar.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

@@ -1,0 +1,92 @@
+# =============================================================================
+# Azkintun-RSS - Docker Compose · dos contenedores
+#
+#   frontend (nginx)  ── publica :8080 al host, sirve el SPA y proxea /api
+#        │  red interna "azkintun-net"
+#        ▼
+#   backend (axum)    ── NO publica puerto al host; solo accesible desde
+#                        la red interna. Persiste SQLite en un named volume.
+#
+# Uso:
+#   cp .env.example .env      # y editá los secretos
+#   docker compose up -d --build
+#   # abrí http://localhost:8080
+#   docker compose logs -f
+#   docker compose down
+# =============================================================================
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: azkintun-backend:latest
+    container_name: azkintun-backend
+    restart: unless-stopped
+    environment:
+      # ── Autenticación (¡definí estos en .env!) ──
+      - JWT_SECRET=${JWT_SECRET:?define JWT_SECRET en .env}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - JWT_TTL_HOURS=${JWT_TTL_HOURS:-24}
+      # COOKIE_SECURE=false para acceso por http://localhost.
+      # Ponelo en true SOLO si servís el frontend detrás de HTTPS/TLS.
+      - COOKIE_SECURE=${COOKIE_SECURE:-false}
+      # ── App ──
+      - PORT=3001
+      - SCRAPE_INTERVAL_MINUTES=${SCRAPE_INTERVAL_MINUTES:-15}
+      - RUST_LOG=${RUST_LOG:-info}
+    volumes:
+      # SQLite persistida en un named volume gestionado por Docker.
+      # A diferencia de un bind-mount (./data:/app/data), el named volume
+      # hereda el ownership del contenedor (uid 1000) en el primer arranque,
+      # así el proceso non-root puede escribir sin ningún chown manual.
+      # Para acceder al archivo desde el host, usá el backup por la app
+      # (botón Exportar) o: docker compose cp backend:/app/data/azkintun.db .
+      - azkintun-data:/app/data
+    networks:
+      - azkintun-net
+    # Sin `ports:` → el backend NO es accesible desde el host, solo desde
+    # la red interna de Docker (es decir, solo el frontend puede llegarle).
+    expose:
+      - "3001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: azkintun-frontend:latest
+    container_name: azkintun-frontend
+    restart: unless-stopped
+    environment:
+      # Destino del reverse-proxy /api. En Compose el service se llama
+      # "backend"; el default de la imagen ya es backend:3001, se deja
+      # explícito para documentar el mecanismo (en k8s se usa otro valor).
+      - BACKEND_UPSTREAM=backend:3001
+      # Resolver DNS embebido de Docker (para la resolución perezosa del
+      # upstream). En k8s se usa el ClusterIP de CoreDNS.
+      - DNS_RESOLVER=127.0.0.11
+    ports:
+      # Único puerto expuesto al host. Cambiá el 8080 si lo necesitás.
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - azkintun-net
+
+networks:
+  azkintun-net:
+    driver: bridge
+
+volumes:
+  # Named volume gestionado por Docker para la base SQLite. Persiste entre
+  # `docker compose down`/`up`. Para borrarlo (y perder los datos):
+  #   docker compose down -v
+  azkintun-data:

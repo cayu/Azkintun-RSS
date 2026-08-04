@@ -1,0 +1,52 @@
+[package]
+name = "azkintun"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+
+[[bin]]
+name = "azkintun"
+path = "src/main.rs"
+
+[dependencies]
+axum = { version = "0.7", features = ["multipart"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "signal"] }
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+rusqlite = { version = "0.31", features = ["bundled"] }
+r2d2 = "0.8"
+
+reqwest = { version = "0.12", default-features = false, features = ["default-tls"] }
+feed-rs = "=2.3.1"
+
+chrono = { version = "0.4", features = ["serde"] }
+csv = "1"
+quick-xml = "0.36"
+futures = "0.3"
+
+anyhow = "1"
+regex = "1"
+once_cell = "1"
+
+# Autenticación
+argon2 = "0.5"
+hmac = "0.12"
+sha2 = "0.10"
+base64 = "0.22"
+
+# Pin de compatibilidad: versiones más nuevas de estas dependencias
+# transitivas requieren `edition2024` en Cargo.toml, que no soporta
+# el toolchain usado para desarrollo/CI en este entorno.
+zeroize = "=1.8.2"
+idna_adapter = "=1.2.0"
+getrandom = "=0.3.4"
+uuid = "=1.11.0"
+base64ct = "=1.6.0"
+
+[profile.release]
+opt-level = 2

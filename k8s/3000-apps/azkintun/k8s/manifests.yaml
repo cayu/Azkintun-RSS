@@ -1,0 +1,299 @@
+# azkintun - Manifiestos Kubernetes (backend Rust + frontend nginx)
+#
+# Azkintun-RSS es un agregador de noticias de ciberseguridad (Rust/Axum +
+# SQLite, servido por un frontend nginx que hace de reverse-proxy del /api).
+# Es la evolución propia de la vieja app "cyberpulse" de ejemplo: reescrita
+# en Rust, con auth, import/export OPML/CSV y ~1400 feeds de fábrica.
+#
+# Arquitectura (dos contenedores, patrón como marvel-app pero STATEFUL):
+#
+#   Browser -> Ingress -> Service azkintun-frontend (nginx :80)
+#                              |
+#                              |  proxy_pass /api  ->  Service azkintun-backend (:3001)
+#                              |                            |
+#                              |                            +-> PVC (SQLite azkintun.db)
+#                              +-> sirve el SPA estático (index.html + app.js)
+#
+# El browser SOLO habla con el frontend (mismo origen) → sin CORS, y el
+# backend nunca queda expuesto directamente al Ingress.
+#
+# IMPORTANTE - las imágenes NO existen en ningún registry público. Se
+# construyen desde este repo (backend/ y frontend/ en la raíz). El deploy.sh
+# de esta carpeta lo automatiza (build + import a containerd de k3s), o lo
+# hacés a mano (ver README.md). Los manifiestos asumen que las imágenes ya
+# están disponibles como:
+#     forgejo.local/apps/azkintun-backend:latest
+#     forgejo.local/apps/azkintun-frontend:latest
+#
+# Aplicar:  bash k8s/3000-apps/azkintun/deploy.sh
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: azkintun
+  labels:
+    app.kubernetes.io/part-of: apps
+---
+# ── Secret: JWT + credenciales del admin inicial ───────────────────────────────
+# Placeholder para demo. En uso real: borrar este bloque y crear el Secret
+# aparte con `kubectl create secret` (el deploy.sh lo hace automáticamente
+# generando valores aleatorios). Ver docs/wiki/23-secrets.md del homelab.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: azkintun-secret
+  namespace: azkintun
+type: Opaque
+stringData:
+  # JWT_SECRET: mínimo 32 caracteres. El deploy.sh genera uno aleatorio.
+  JWT_SECRET: "REEMPLAZAR_O_CREAR_SECRET_APARTE_MIN_32_CHARS"
+  # Credenciales del usuario admin que se crea en el primer arranque.
+  ADMIN_USERNAME: "admin"
+  ADMIN_PASSWORD: "REEMPLAZAR_O_CREAR_SECRET_APARTE"
+---
+# ── PVC: la base SQLite vive acá (persistente entre reinicios) ─────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: azkintun-data
+  namespace: azkintun
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  # en cloud: managed-csi (AKS) / gp3 (EKS) / standard-rwo (GKE) - ver wiki 65
+  resources:
+    requests:
+      storage: 2Gi
+---
+# ── Backend (Rust/Axum + SQLite) ───────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azkintun-backend
+  namespace: azkintun
+  labels:
+    app: azkintun-backend
+spec:
+  replicas: 1
+  # Recreate (no RollingUpdate): el PVC es RWO y SQLite no admite dos
+  # escritores simultáneos. Al actualizar, baja el viejo y luego sube el nuevo.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: azkintun-backend
+  template:
+    metadata:
+      labels:
+        app: azkintun-backend
+    spec:
+      # nodeSelector multiarch: en x86 cambiar a amd64 o quitar (ver wiki 18)
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      # fsGroup: para que el proceso (no-root, uid 1000) escriba en el PVC
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: backend
+          image: forgejo.local/apps/azkintun-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - secretRef:
+                name: azkintun-secret
+          env:
+            - name: PORT
+              value: "3001"
+            - name: AZKINTUN_DATA_DIR
+              value: "/app/data"
+            # Cookie sin Secure: el TLS lo termina el Ingress (traefik), el
+            # backend habla HTTP plano dentro del cluster. Si expusieras el
+            # backend directo por HTTPS, poné "true".
+            - name: COOKIE_SECURE
+              value: "false"
+            - name: JWT_TTL_HOURS
+              value: "24"
+            # Scrape de ~1400 feeds: intervalo y concurrencia.
+            - name: SCRAPE_INTERVAL_MINUTES
+              value: "15"
+            - name: SCRAPE_CONCURRENCY
+              value: "16"
+            # No scrapear al arrancar: el pod queda listo enseguida y el
+            # primer scrape ocurre al cumplirse el intervalo. Poné "1" si
+            # querés feeds poblados desde el minuto cero.
+            - name: SCRAPE_ON_STARTUP
+              value: "0"
+            - name: RUST_LOG
+              value: "info"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data      # el backend crea /app/data/azkintun.db
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3001
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: azkintun-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: azkintun-backend
+  namespace: azkintun
+spec:
+  type: ClusterIP
+  selector:
+    app: azkintun-backend
+  ports:
+    - port: 3001
+      targetPort: 3001
+---
+# ── Frontend (nginx: sirve el SPA y hace reverse-proxy de /api al backend) ──────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azkintun-frontend
+  namespace: azkintun
+  labels:
+    app: azkintun-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: azkintun-frontend
+  template:
+    metadata:
+      labels:
+        app: azkintun-frontend
+    spec:
+      # nodeSelector multiarch: en x86 cambiar a amd64 o quitar (ver wiki 18)
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      containers:
+        - name: frontend
+          image: forgejo.local/apps/azkintun-frontend:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            # El Service del backend se llama "azkintun-backend" (no "backend"
+            # como en Docker Compose). nginx resuelve el upstream con esta var.
+            - name: BACKEND_UPSTREAM
+              value: "azkintun-backend:3001"
+            # Resolver DNS del cluster (CoreDNS). En k3s el ClusterIP del
+            # Service kube-dns es 10.43.0.10 por defecto. Si tu cluster usa
+            # otro rango de Services, ajustá este valor:
+            #   kubectl -n kube-system get svc kube-dns -o jsonpath='{.spec.clusterIP}'
+            - name: DNS_RESOLVER
+              value: "10.43.0.10"
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "16Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: azkintun-frontend
+  namespace: azkintun
+spec:
+  type: ClusterIP
+  selector:
+    app: azkintun-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+---
+# ── Ingress ────────────────────────────────────────────────────────────────────
+# Publica la app a través de Traefik (que en k3s ya escucha en 80 y 443, con
+# EXTERNAL-IP asignada por MetalLB). El host y el ClusterIssuer son
+# PLACEHOLDERS que el deploy.sh sustituye por variables de entorno:
+#   AZKINTUN_HOST    (default azkintun.local)
+#   AZKINTUN_ISSUER  (default selfsigned-issuer; usar letsencrypt-prod si tenés
+#                     dominio público y querés un cert válido en 443)
+#   AZKINTUN_TLS     (default "true"; ponelo en "false" para publicar SOLO en
+#                     HTTP:80 sin TLS ni redirect - útil para pruebas rápidas)
+#
+# También podés dejarlos fijos acá y aplicar con kubectl, o cambiarlos con el
+# configure-domain.sh del homelab (opera por sed sobre k8s/3000-apps/).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: azkintun
+  namespace: azkintun
+  annotations:
+    cert-manager.io/cluster-issuer: "selfsigned-issuer"
+    # Redirect HTTP(:80) → HTTPS(:443) vía el middleware nativo de Traefik.
+    # Con esto, entrar por http://HOST reenvía a https://HOST. El Middleware
+    # "redirect-https" se define más abajo, en el mismo namespace.
+    # Si publicás sin TLS (AZKINTUN_TLS=false en el deploy.sh), esta línea y el
+    # bloque tls se quitan automáticamente.
+    traefik.ingress.kubernetes.io/router.middlewares: "azkintun-redirect-https@kubernetescrd"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts: ["azkintun.local"]     # el deploy.sh lo reemplaza con AZKINTUN_HOST
+      secretName: azkintun-tls
+  rules:
+    - host: azkintun.local          # el deploy.sh lo reemplaza con AZKINTUN_HOST
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: azkintun-frontend
+                port:
+                  number: 80
+---
+# ── Middleware de Traefik: redirect HTTP → HTTPS ───────────────────────────────
+# CRD de Traefik (viene con k3s). Referenciado por la annotation del Ingress.
+# Solo se usa si publicás con TLS; el deploy.sh lo aplica en ese caso.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-https
+  namespace: azkintun
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="1.0">
+  <head>
+    <title>Feeds of Sergio Cayuqueo from Inoreader [https://www.inoreader.com]</title>
+  </head>
+  <body>
+    <outline text="Medios" title="Medios">
+      <outline text="Elena Rossini" title="Elena Rossini" type="rss" xmlUrl="https://elenarossini.com/feed/" htmlUrl="https://elenarossini.com/"/>
+    </outline>
+    <outline text="Seginfo - CVE" title="Seginfo - CVE">
+      <outline text="vuldb.com" title="vuldb.com" type="rss" xmlUrl="https://vuldb.com/?rss.recent" htmlUrl="http://www.scip.ch/"/>
+      <outline text="INCIBE-CERT - Vulnerabilities RSS" title="INCIBE-CERT - Vulnerabilities RSS" type="rss" xmlUrl="https://www.incibe.es/feed/vulnerabilities" htmlUrl="https://www.incibe.es/"/>
+    </outline>
+    <outline text="Home Lab" title="Home Lab">
+      <outline text="/r/homelab - for those who have a computer lab at home..." title="/r/homelab - for those who have a computer lab at home..." type="rss" xmlUrl="https://www.reddit.com/r/homelab/.rss" htmlUrl="https://www.reddit.com/r/homelab/"/>
+      <outline text="HomeLab Porn" title="HomeLab Porn" type="rss" xmlUrl="https://www.reddit.com/r/HomeLabPorn/.rss?" htmlUrl="https://www.reddit.com/r/HomeLabPorn/"/>
+      <outline text="homelabbity" title="homelabbity" type="rss" xmlUrl="https://www.reddit.com/r/homelab/.rss?" htmlUrl="https://www.reddit.com/r/homelab/"/>
+      <outline text="Noted" title="Noted" type="rss" xmlUrl="https://noted.lol/rss/" htmlUrl="https://noted.lol/"/>
+      <outline text="Homelab on Medium" title="Homelab on Medium" type="rss" xmlUrl="https://medium.com/feed/tag/homelab" htmlUrl="https://medium.com/tag/homelab/latest?source=rss------homelab-5"/>
+      <outline text="selfh.st" title="selfh.st" type="rss" xmlUrl="https://selfh.st/rss/" htmlUrl="https://selfh.st/"/>
+      <outline text="Jeff Geerling's Blog" title="Jeff Geerling's Blog" type="rss" xmlUrl="https://www.jeffgeerling.com/blog.xml" htmlUrl="https://www.jeffgeerling.com/blog"/>
+      <outline text="homelab subreddits curated by /u/lawrencesystems" title="homelab subreddits curated by /u/lawrencesystems" type="rss" xmlUrl="https://www.reddit.com/user/lawrencesystems/m/homelab/.rss" htmlUrl="https://www.reddit.com/user/lawrencesystems/m/homelab/"/>
+    </outline>
+    <outline text="Noticias" title="Noticias">
+      <outline text="Ciberprisma – alianza por la ciberseguridad" title="Ciberprisma – alianza por la ciberseguridad" type="rss" xmlUrl="https://ciberprisma.org/feed/" htmlUrl="https://ciberprisma.org/"/>
+      <outline text="KittenLabs – Blog" title="KittenLabs – Blog" type="rss" xmlUrl="https://kittenlabs.de/blog/index.xml" htmlUrl="https://kittenlabs.de/blog/"/>
+      <outline text="The Record by Recorded Future" title="The Record by Recorded Future" type="rss" xmlUrl="https://therecord.media/feed" htmlUrl="https://therecord.media/"/>
+      <outline text="TechCrunch" title="TechCrunch" type="rss" xmlUrl="https://techcrunch.com/feed/" htmlUrl="http://techcrunch.com/"/>
+      <outline text="Hackaday" title="Hackaday" type="rss" xmlUrl="https://hackaday.com/feed/" htmlUrl="https://hackaday.com/"/>
+    </outline>
+    <outline text="Seginfo - Podcasts" title="Seginfo - Podcasts">
+      <outline text="SANS Internet Storm Center Daily Network Security and Computer Security Podcast" title="SANS Internet Storm Center Daily Network Security and Computer Security Podcast" type="rss" xmlUrl="https://isc.sans.edu/dailypodcast.xml" htmlUrl="https://isc.sans.edu/podcast.html#stormcast"/>
+      <outline text="MEET THE HACKER" title="MEET THE HACKER" type="rss" xmlUrl="https://anchor.fm/s/6728bde4/podcast/rss" htmlUrl="https://podcasters.spotify.com/pod/show/meetthehacker"/>
+      <outline text="Hacker Public Radio" title="Hacker Public Radio" type="rss" xmlUrl="https://hackerpublicradio.org/hpr_rss.php" htmlUrl="https://hackerpublicradio.org/about.html"/>
+      <outline text="CYBER" title="CYBER" type="rss" xmlUrl="https://rss.acast.com/cyber" htmlUrl="https://www.vice.com/en_us/topic/cyber"/>
+      <outline text="Darknet Diaries" title="Darknet Diaries" type="rss" xmlUrl="https://feeds.megaphone.fm/darknetdiaries" htmlUrl="https://darknetdiaries.com/"/>
+      <outline text="Off The Hook (high-bitrate)" title="Off The Hook (high-bitrate)" type="rss" xmlUrl="https://www.2600.com/oth-broadband.xml" htmlUrl="https://www.2600.com/"/>
+    </outline>
+    <outline text="Linux" title="Linux">
+      <outline text="CNXSoft - Embedded Software Development" title="CNXSoft - Embedded Software Development" type="rss" xmlUrl="https://www.cnx-software.com/feed/" htmlUrl="https://www.cnx-software.com/"/>
+      <outline text="It's FOSS News" title="It's FOSS News" type="rss" xmlUrl="https://news.itsfoss.com/latest/rss/" htmlUrl="https://news.itsfoss.com/"/>
+      <outline text="LWN.net" title="LWN.net" type="rss" xmlUrl="https://lwn.net/headlines/rss" htmlUrl="https://lwn.net/"/>
+      <outline text="Linux Kernel Newbies" title="Linux Kernel Newbies" type="rss" xmlUrl="https://kernelnewbies.org/Linux_Kernel_Newbies?action=rss_rc&amp;unique=1&amp;ddiffs=1" htmlUrl="http://kernelnewbies.org/Linux_Kernel_Newbies"/>
+      <outline text="Phoronix" title="Phoronix" type="rss" xmlUrl="https://www.phoronix.com/rss.php" htmlUrl="http://www.phoronix.com/"/>
+      <outline text="Slashdot: Linux" title="Slashdot: Linux" type="rss" xmlUrl="https://rss.slashdot.org/Slashdot/slashdotLinux" htmlUrl="https://linux.slashdot.org/"/>
+      <outline text="Slashdot" title="Slashdot" type="rss" xmlUrl="https://rss.slashdot.org/Slashdot/slashdot" htmlUrl="https://slashdot.org/"/>
+      <outline text="MuyLinux" title="MuyLinux" type="rss" xmlUrl="https://muylinux.com/feed" htmlUrl="https://www.muylinux.com/"/>
+    </outline>
+    <outline text="Seginfo - OT" title="Seginfo - OT">
+      <outline text="CIP Cyber" title="CIP Cyber" type="rss" xmlUrl="https://cipcyber.com/feed" htmlUrl="https://staging.cipcyber.com/"/>
+      <outline text="IoTAgenda: IoT Agenda" title="IoTAgenda: IoT Agenda" type="rss" xmlUrl="https://internetofthingsagenda.techtarget.com/rss/IoT-Agenda.xml" htmlUrl="https://internetofthingsagenda.techtarget.com/rss/IoT-Agenda.xml"/>
+      <outline text="IoT Security Foundation" title="IoT Security Foundation" type="rss" xmlUrl="https://iotsecurityfoundation.org/feed/" htmlUrl="https://iotsecurityfoundation.org/"/>
+      <outline text="Attify Blog - IoT Security, Pentesting and Exploitation" title="Attify Blog - IoT Security, Pentesting and Exploitation" type="rss" xmlUrl="https://blog.attify.com/rss/" htmlUrl="https://blog.attify.com/"/>
+    </outline>
+    <outline text="Seginfo - Noticias" title="Seginfo - Noticias">
+      <outline text="Cybermaterial" title="Cybermaterial" type="rss" xmlUrl="https://cybermaterial.com/feed/" htmlUrl="https://cybermaterial.com/"/>
+      <outline text="SECURITY.COM" title="SECURITY.COM" type="rss" xmlUrl="https://www.security.com/rss/v1/blogs/rss.xml" htmlUrl="https://www.security.com/"/>
+      <outline text="Cisco Talos" title="Cisco Talos" type="rss" xmlUrl="http://talosintelligence.com/feed.xml" htmlUrl="http://talosintelligence.com/"/>
+      <outline text="Nextron Systems" title="Nextron Systems" type="rss" xmlUrl="https://www.nextron-systems.com/feed/" htmlUrl="https://www.nextron-systems.com/"/>
+      <outline text="Hacking Blogs | Become an Ethical Hacker" title="Hacking Blogs | Become an Ethical Hacker" type="rss" xmlUrl="https://hackingblogs.com/feed/" htmlUrl="https://hackingblogs.com/"/>
+      <outline text="Microsoft Security Response Center" title="Microsoft Security Response Center" type="rss" xmlUrl="https://msrc.microsoft.com/blog/feed" htmlUrl="https://blogs.technet.microsoft.com/bluehat"/>
+      <outline text="Cyble" title="Cyble" type="rss" xmlUrl="https://cyble.com/feed/" htmlUrl="https://cyble.com/"/>
+      <outline text="Hackers – Blog de Grupo Aguilar Soluciones" title="Hackers – Blog de Grupo Aguilar Soluciones" type="rss" xmlUrl="https://blog.aguilarsoluciones.com/category/hackers/feed/" htmlUrl="https://blog.aguilarsoluciones.com/"/>
+      <outline text="Security Boulevard" title="Security Boulevard" type="rss" xmlUrl="https://securityboulevard.com/feed/" htmlUrl="https://securityboulevard.com/"/>
+      <outline text="All Fortinet Blog | Latest Posts" title="All Fortinet Blog | Latest Posts" type="rss" xmlUrl="https://feeds.fortinet.com/fortinet/blogs&amp;x=1" htmlUrl="https://www.fortinet.com/bin/fortinet/allblogsrss"/>
+      <outline text="Juan Brodersen" title="Juan Brodersen" type="rss" xmlUrl="https://juanbrodersen.ar/feed/" htmlUrl="https://juanbrodersen.ar/"/>
+      <outline text="Krebs on Security" title="Krebs on Security" type="rss" xmlUrl="https://krebsonsecurity.com/feed/" htmlUrl="https://krebsonsecurity.com/"/>
+      <outline text="Darknet" title="Darknet" type="rss" xmlUrl="https://www.darknet.org.uk/feed/" htmlUrl="https://www.darknet.org.uk/"/>
+      <outline text="Securelist - Information about Viruses, Hackers and Spam" title="Securelist - Information about Viruses, Hackers and Spam" type="rss" xmlUrl="https://www.securelist.com/en/rss/allupdates" htmlUrl="https://securelist.com/"/>
+      <outline text="Malwarebytes Unpacked" title="Malwarebytes Unpacked" type="rss" xmlUrl="https://blog.malwarebytes.org/feed/" htmlUrl="https://blog.malwarebytes.org/"/>
+      <outline text="Naked Security" title="Naked Security" type="rss" xmlUrl="https://news.sophos.com/feed/" htmlUrl="https://nakedsecurity.sophos.com/"/>
+      <outline text="Dark Reading" title="Dark Reading" type="rss" xmlUrl="https://www.darkreading.com/rss.xml" htmlUrl="https://www.darkreading.com/"/>
+      <outline text="The Hacker Factor Blog" title="The Hacker Factor Blog" type="rss" xmlUrl="https://www.hackerfactor.com/blog/index.php?/feeds/index.rss2" htmlUrl="https://www.hackerfactor.com/blog/"/>
+      <outline text="MSRC Security Update Guide" title="MSRC Security Update Guide" type="rss" xmlUrl="https://api.msrc.microsoft.com/update-guide/rss" htmlUrl="https://msrc.microsoft.com/update-guide/"/>
+      <outline text="Securelist - Information about Viruses, Hackers and Spam" title="Securelist - Information about Viruses, Hackers and Spam" type="rss" xmlUrl="https://securelist.com/feed/" htmlUrl="https://securelist.com/"/>
+      <outline text="Posts – Major League Hacking News" title="Posts – Major League Hacking News" type="rss" xmlUrl="http://news.mlh.io/posts/feed" htmlUrl="http://news.mlh.io/"/>
+      <outline text="HackRead" title="HackRead" type="rss" xmlUrl="https://www.hackread.com/feed/" htmlUrl="https://www.hackread.com/"/>
+      <outline text="Hacking Articles" title="Hacking Articles" type="rss" xmlUrl="https://www.hackingarticles.in/feed/" htmlUrl="https://www.hackingarticles.in/"/>
+      <outline text="GBHackers On Security" title="GBHackers On Security" type="rss" xmlUrl="https://gbhackers.com/feed/" htmlUrl="https://gbhackers.com/"/>
+      <outline text="KnowBe4 Security Awareness Training Blog" title="KnowBe4 Security Awareness Training Blog" type="rss" xmlUrl="https://blog.knowbe4.com/rss.xml" htmlUrl="https://blog.knowbe4.com/"/>
+      <outline text="Latest Hacking News" title="Latest Hacking News" type="rss" xmlUrl="https://latesthackingnews.com/feed/" htmlUrl="https://latesthackingnews.com/"/>
+      <outline text="HackerOne" title="HackerOne" type="rss" xmlUrl="https://www.hackerone.com/blog.rss" htmlUrl="https://www.hackerone.com/blog.rss"/>
+      <outline text="English – We Live Security" title="English – We Live Security" type="rss" xmlUrl="https://www.welivesecurity.com/feed/" htmlUrl="http://www.welivesecurity.com/"/>
+      <outline text="The Hacker News" title="The Hacker News" type="rss" xmlUrl="https://thehackernews.com/feeds/posts/default" htmlUrl="https://thehackernews.com/"/>
+      <outline text="Schneier on Security" title="Schneier on Security" type="rss" xmlUrl="https://www.schneier.com/blog/index.rdf" htmlUrl="https://www.schneier.com/blog/"/>
+      <outline text="Ehacking" title="Ehacking" type="rss" xmlUrl="https://www.ehacking.net/feed" htmlUrl="https://www.ehacking.net/"/>
+      <outline text="MuySeguridad. Seguridad informática." title="MuySeguridad. Seguridad informática." type="rss" xmlUrl="https://muyseguridad.net/feed" htmlUrl="https://www.muyseguridad.net/"/>
+    </outline>
+  </body>
+</opml>

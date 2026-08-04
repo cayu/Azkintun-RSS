@@ -1,0 +1,115 @@
+name: Build and Deploy azkintun
+
+# Se dispara al pushear cambios de la app (código o manifiestos) a main,
+# o manualmente desde la UI de Forgejo.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'frontend/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'Dockerfile'
+      - 'k8s/3000-apps/azkintun/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Arquitectura
+        run: |
+          case "$(uname -m)" in
+            x86_64)  echo "PLATFORM=linux/amd64" >> $GITHUB_ENV ;;
+            aarch64) echo "PLATFORM=linux/arm64" >> $GITHUB_ENV ;;
+          esac
+          # BuildKit: habilita caché de capas y builds más rápidos.
+          echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
+
+      - name: Verificar que seeds.sql esté al día
+        run: |
+          # Falla si src/seeds_data.rs cambió pero no se regeneró seeds.sql.
+          # (Requiere el toolchain Rust en el runner; si no está, este paso
+          #  se puede quitar y regenerar seeds.sql localmente antes del push.)
+          if command -v cargo >/dev/null 2>&1; then
+            bash scripts/generate-seeds-sql.sh --check
+          else
+            echo "cargo no disponible en el runner; se omite el check de seeds.sql"
+          fi
+
+      - name: Build backend (Rust) y frontend (nginx)
+        run: |
+          # El backend se construye desde la raíz del repo; el frontend desde frontend/.
+          # --build-arg BUILDKIT_INLINE_CACHE=1 deja metadata de caché en la
+          # imagen para reutilizar capas entre builds (útil con un registry).
+          docker build --platform "$PLATFORM" --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -t forgejo.local/apps/azkintun-backend:latest .
+          docker build --platform "$PLATFORM" --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -t forgejo.local/apps/azkintun-frontend:latest frontend/
+
+      - name: Test de humo (backend arranca y /api/health responde)
+        run: |
+          docker run -d --name azk-be \
+            -e JWT_SECRET=ci-smoke-test-secret-de-al-menos-32-chars \
+            -e ADMIN_PASSWORD=citest \
+            -e SCRAPE_ON_STARTUP=0 \
+            -e COOKIE_SECURE=false \
+            -p 3001:3001 \
+            forgejo.local/apps/azkintun-backend:latest
+          # Esperar a que levante y comprobar el healthcheck público
+          for i in $(seq 1 15); do
+            if curl -sf http://localhost:3001/api/health >/dev/null; then
+              echo "✓ /api/health OK"; break
+            fi
+            sleep 2
+          done
+          curl -sf http://localhost:3001/api/health || { docker logs azk-be; docker rm -f azk-be; exit 1; }
+          docker rm -f azk-be
+
+      - name: Import a containerd de k3s
+        run: |
+          for img in azkintun-backend azkintun-frontend; do
+            docker save forgejo.local/apps/$img:latest | sudo k3s ctr images import -
+          done
+
+      - name: Deploy (el Secret se gestiona aparte, no en CI)
+        env:
+          # El CI respeta la config de publicación si la definís como
+          # "Variables" del repo en Forgejo (Settings → Actions → Variables).
+          # Si no, usa los mismos defaults que el deploy.sh. Así un push no
+          # revierte el host/issuer que hayas elegido.
+          AZKINTUN_HOST: ${{ vars.AZKINTUN_HOST || 'azkintun.local' }}
+          AZKINTUN_ISSUER: ${{ vars.AZKINTUN_ISSUER || 'selfsigned-issuer' }}
+          AZKINTUN_TLS: ${{ vars.AZKINTUN_TLS || 'true' }}
+        run: |
+          # Aplicar los manifiestos SIN el bloque Secret: el Secret real
+          # (JWT + admin) ya existe en el cluster, creado por el deploy.sh
+          # la primera vez. Así el CI nunca toca credenciales.
+          # Sustituir host/issuer según las variables (defaults del manifiesto).
+          sed -e "s/azkintun\.local/${AZKINTUN_HOST}/g" \
+              -e "s/selfsigned-issuer/${AZKINTUN_ISSUER}/g" \
+              k8s/3000-apps/azkintun/k8s/manifests.yaml > /tmp/azkintun-raw.yaml
+          # Filtrar el Secret; y si TLS=false, quitar tls/redirect/middleware.
+          python3 -c "
+          import yaml, os
+          tls = os.environ.get('AZKINTUN_TLS', 'true')
+          out = []
+          for d in yaml.safe_load_all(open('/tmp/azkintun-raw.yaml')):
+              if not d or d.get('kind') == 'Secret': continue
+              if tls != 'true':
+                  if d.get('kind') == 'Middleware' and d['metadata']['name'] == 'redirect-https': continue
+                  if d.get('kind') == 'Ingress':
+                      ann = d['metadata'].get('annotations', {})
+                      ann.pop('traefik.ingress.kubernetes.io/router.middlewares', None)
+                      ann.pop('cert-manager.io/cluster-issuer', None)
+                      d['metadata']['annotations'] = ann
+                      d['spec'].pop('tls', None)
+              out.append(d)
+          yaml.safe_dump_all(out, open('/tmp/azkintun.yaml', 'w'))
+          "
+          kubectl apply -f /tmp/azkintun.yaml
+          kubectl rollout status deployment/azkintun-backend  -n azkintun --timeout=180s
+          kubectl rollout status deployment/azkintun-frontend -n azkintun --timeout=120s
