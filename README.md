@@ -139,12 +139,44 @@ POST /api/auth/change-password   { currentPassword, newPassword }
 | `JWT_TTL_HOURS`            | `24`    | Vida útil de un token de sesión                           |
 | `COOKIE_SECURE`            | `true`  | Flag `Secure` de la cookie. **`false` para http local**, `true` solo detrás de HTTPS |
 | `CORS_ALLOWED_ORIGIN`      | (vacío) | Origen permitido para CORS (solo si el frontend corre en otro origen; con el proxy nginx no hace falta) |
-| `PORT`                     | `3001`  | Puerto HTTP del backend                                   |
+| `PORT`                     | `3001`  | Puerto HTTP del backend (interno, no se expone al host)   |
+| `FRONTEND_PORT`            | `8080`  | Puerto del host por el que se accede a la app (solo Docker Compose) |
 | `SCRAPE_INTERVAL_MINUTES`  | `15`    | Frecuencia del scrape periódico                           |
 | `SCRAPE_CONCURRENCY`       | `16`    | Fuentes scrapeadas en paralelo (importante con ~1400 feeds) |
 | `SCRAPE_ON_STARTUP`        | `true`  | Si es `0`/`false`, no scrapea al arrancar                 |
 | `AZKINTUN_DATA_DIR`      | `/app/data` en Docker | Dónde vive `azkintun.db`                  |
 | `RUST_LOG`                 | `info`  | Nivel de logging                                          |
+
+### Cambiar el puerto de la app
+
+Por defecto la app se publica en el puerto **8080** del host. Si ya tenés
+algo corriendo ahí, cambiá `FRONTEND_PORT` (solo afecta al frontend; el
+backend nunca se expone al host).
+
+En el `.env`:
+
+```
+FRONTEND_PORT=9090
+```
+
+```bash
+docker compose up -d
+# ahora abrí http://localhost:9090
+```
+
+O sin editar el `.env`, pasándolo en la misma línea:
+
+```bash
+FRONTEND_PORT=9090 docker compose up -d
+```
+
+Cualquier puerto libre sirve. En Kubernetes esto no aplica: el acceso va
+por el Ingress (puertos 80/443) o por `port-forward`, donde elegís el
+puerto local:
+
+```bash
+kubectl port-forward -n azkintun svc/azkintun-frontend 9090:80
+```
 
 ### HTTPS en producción
 
@@ -310,10 +342,8 @@ bash scripts/generate-seeds-sql.sh          # regenera seeds.sql
 bash scripts/generate-seeds-sql.sh --check  # falla si está desactualizado (lo usa el CI)
 ```
 
-### Nota sobre versiones pineadas en `Cargo.toml`
+### Nota sobre versiones fijas en `Cargo.toml`
 
-Varias dependencias transitivas están pineadas a versiones exactas porque
-el proyecto se desarrolló/probó contra un toolchain viejo (Rust 1.75);
-versiones más nuevas requieren `edition2024`. Con un toolchain moderno
-(1.85+) no hacen falta, pero se dejaron fijas por ser la configuración
-exacta que se compiló y probó.
+Varias dependencias fijadas a versiones exactas porque
+el proyecto se desarrolló/probó contra un Rust 1.75.
+Se dejaron fijas por ser la configuración exacta que se compiló y probó.
