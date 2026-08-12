@@ -164,41 +164,7 @@ function renderSidebar() {
   </div>`;
   $('sidebar').innerHTML = h;
 }
-// ── Article dialog ──
-const dlg       = document.getElementById('art-dialog');
-const dlgSevBar = document.getElementById('dlg-sev-bar');
-const dlgImg    = document.getElementById('dlg-img');
-const dlgTitle  = document.getElementById('dlg-title');
-const dlgMeta   = document.getElementById('dlg-meta');
-const dlgSum    = document.getElementById('dlg-summary');
-const dlgLink   = document.getElementById('dlg-link');
-const dlgStar   = document.getElementById('dlg-star');
 
-function openArticleDialog(a) {
-  dlgSevBar.className = `dlg-sev-bar sev-bar-${a.severity}`;
-  if (a.imageUrl) { dlgImg.src = a.imageUrl; dlgImg.style.display = 'block'; }
-  else { dlgImg.style.display = 'none'; dlgImg.src = ''; }
-  dlgTitle.textContent = a.title;
-  dlgMeta.textContent  = [a.sourceName, a.folderName, relTime(a.publishedAt), a.readTime].filter(Boolean).join(' · ');
-  dlgSum.textContent   = a.summary || '(sin resumen)';
-  dlgLink.href         = a.url;
-  dlgStar.className    = `dlg-star${a.isStarred ? ' on' : ''}`;
-  dlgStar.dataset.id   = a.id;
-  dlg.showModal();
-}
-
-dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
-document.getElementById('dlg-close').addEventListener('click', e => { e.stopPropagation(); dlg.close(); });
-document.getElementById('dlg-star').addEventListener('click', async (e) => {
-  e.stopPropagation();
-  const id = dlgStar.dataset.id;
-  const a = state.articles.find(x => x.id == id);
-  if (!a) return;
-  const res = await api('/api/articles/' + id, { method: 'PATCH', body: JSON.stringify({ isStarred: !a.isStarred }) });
-  a.isStarred = (await res.json()).isStarred;
-  dlgStar.className = `dlg-star${a.isStarred ? ' on' : ''}`;
-  renderArticles();
-});
 // ── Articles ──
 function relTime(iso) {
   if (!iso) return '';
