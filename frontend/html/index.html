@@ -230,7 +230,7 @@
   .dlg-title { font-size: 18px; font-weight: 700; color: #e2eaf3; line-height: 1.4; }
   .dlg-meta  { font-size: 12px; color: var(--text3); }
   .dlg-summary { font-size: 13px; color: var(--text); line-height: 1.7; }
-  .dlg-footer { display: flex; align-items: center; gap: 12px; padding-top: 14px; border-top: 1px solid var(--border); margin-top: auto; }
+  .dlg-footer { display: flex; align-items: center; gap: 12px;padding: 12px 24px 16px;  border-top: 1px solid var(--border);  flex-shrink: 0;}
   .dlg-footer a { font-size: 13px; color: var(--blue); }
   .dlg-star { font-size: 20px; cursor: pointer; color: var(--border2); transition: transform .1s, color .1s; }
   .dlg-star.on { color: var(--yellow); }
@@ -307,11 +307,11 @@
     <div class="dlg-title" id="dlg-title"></div>
     <div class="dlg-meta"  id="dlg-meta"></div>
     <div class="dlg-summary" id="dlg-summary"></div>
-    <div class="dlg-footer">
-      <span class="dlg-star" id="dlg-star" title="Guardar en favoritos">★</span>
-      <a id="dlg-link" href="#" target="_blank" rel="noopener">Abrir artículo ↗</a>
-      <button class="dlg-close" id="dlg-close">Cerrar</button>
-    </div>
+  </div>
+  <div class="dlg-footer">
+    <span class="dlg-star" id="dlg-star" title="Guardar en favoritos">★</span>
+    <a id="dlg-link" href="#" target="_blank" rel="noopener">Abrir artículo ↗</a>
+    <button class="dlg-close" id="dlg-close">Cerrar</button>
   </div>
 </dialog>
 
